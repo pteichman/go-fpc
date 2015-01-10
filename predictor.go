@@ -8,7 +8,7 @@ type DfcmPredictor struct {
 
 func NewDfcmPredictor(logOfTableSize int) *DfcmPredictor {
 	return &DfcmPredictor{
-		Table: make([]int64, logOfTableSize),
+		Table: make([]int64, 1<<uint(logOfTableSize)),
 	}
 }
 
@@ -29,7 +29,7 @@ type FcmPredictor struct {
 
 func NewFcmPredictor(logOfTableSize int) *FcmPredictor {
 	return &FcmPredictor{
-		Table: make([]int64, logOfTableSize),
+		Table: make([]int64, 1<<uint(logOfTableSize)),
 	}
 }
 

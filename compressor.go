@@ -190,6 +190,9 @@ func (c *Compressor) decode(buf *bytes.Buffer) []float64 {
 
 func (c *Compressor) ToByteArray(diff int64) []byte {
 	ezb := encodeZeroBytes(diff)
+	if ezb > 3 {
+		ezb++
+	}
 
 	a := make([]byte, 8-ezb)
 	for i := 0; i < len(a); i++ {

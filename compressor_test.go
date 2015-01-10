@@ -2,6 +2,7 @@ package fpc
 
 import (
 	"math"
+	"reflect"
 	"testing"
 )
 
@@ -33,6 +34,27 @@ func TestLongToByteArray(t *testing.T) {
 	}
 }
 
+func TestEncode(t *testing.T) {
+	var tests = []struct {
+		Vals     []float64
+		Expected []byte
+	}{
+		{[]float64{0.0}, []byte{0x76, 0x0}},
+		{[]float64{1.0}, []byte{0x06, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xf0, 0x3f, 0x0}},
+		{[]float64{2.0}, []byte{0x06, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x40, 0x0}},
+		{[]float64{1.0, 2.0}, []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xf0, 0x3f, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x40}},
+	}
+
+	for _, tt := range tests {
+		comp := NewCompressor(16)
+		b := comp.Compress(tt.Vals).Bytes()
+
+		if !reflect.DeepEqual(b, tt.Expected) {
+			t.Errorf("Failed encode: %x (expected %x)", b, tt.Expected)
+		}
+	}
+}
+
 func TestRoundtripWithTwoValues(t *testing.T) {
 	var tests = []struct {
 		Vals []float64
@@ -46,7 +68,7 @@ func TestRoundtripWithTwoValues(t *testing.T) {
 		vals := comp.Decompress(comp.Compress(tt.Vals))
 
 		if !almostEqualSlice(tt.Vals, vals) {
-			t.Fatalf("Failed round trip: %v (got %v)", tt.Vals, vals)
+			t.Errorf("Failed round trip: %v (got %v)", tt.Vals, vals)
 		}
 	}
 }
