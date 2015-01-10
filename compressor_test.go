@@ -1,6 +1,9 @@
 package fpc
 
-import "testing"
+import (
+	"log"
+	"testing"
+)
 
 func TestLongToByteArray(t *testing.T) {
 	comp := NewCompressor(16)
@@ -22,6 +25,7 @@ func TestRoundtripWithTwoValues(t *testing.T) {
 	comp := NewCompressor(16)
 
 	for _, tt := range tests {
-		comp.Compress(tt.Vals)
+		vals := comp.Decompress(comp.Compress(tt.Vals))
+		log.Println(vals)
 	}
 }

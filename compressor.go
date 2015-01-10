@@ -100,7 +100,7 @@ func (c *Compressor) encode(buf *bytes.Buffer, d, e float64) {
 		code |= byte(zb << 4)
 	} else {
 		zb := encodeZeroBytes(diff2e)
-		code |= 0x80
+		code |= 0x08
 		code |= byte(zb << 4)
 	}
 
@@ -120,7 +120,72 @@ func (c *Compressor) encode(buf *bytes.Buffer, d, e float64) {
 }
 
 func (c *Compressor) Decompress(buf *bytes.Buffer) []float64 {
-	return nil
+	var ret []float64
+
+	for i := 0; i < buf.Len(); i += 2 {
+		ret = append(ret, c.decode(buf)...)
+	}
+
+	return ret
+}
+
+func (c *Compressor) decode(buf *bytes.Buffer) []float64 {
+	head, _ := buf.ReadByte()
+
+	var pred int64
+	if (head & 0x80) != 0 {
+		pred = c.pred2.Prediction()
+	} else {
+		pred = c.pred1.Prediction()
+	}
+
+	nzb := (head & 0x70) >> 4
+	if nzb > 3 {
+		nzb++
+	}
+
+	dst := make([]byte, 8-nzb)
+
+	// FIXME: errors
+	buf.Read(dst)
+
+	diff := c.ToLong(dst)
+	actual := pred ^ diff
+
+	c.pred1.Update(actual)
+	c.pred2.Update(actual)
+
+	var ret []float64
+	ret = append(ret, math.Float64frombits(uint64(actual)))
+
+	if (head & 0x08) != 0 {
+		pred = c.pred2.Prediction()
+	} else {
+		pred = c.pred1.Prediction()
+	}
+
+	nzb = head & 0x07
+	if nzb > 3 {
+		nzb++
+	}
+
+	dst = make([]byte, 8-nzb)
+
+	// FIXME: errors
+	buf.Read(dst)
+
+	diff = c.ToLong(dst)
+
+	if nzb == 7 && diff == 0 {
+		return ret
+	}
+
+	actual = pred ^ diff
+
+	c.pred1.Update(actual)
+	c.pred2.Update(actual)
+
+	return append(ret, math.Float64frombits(uint64(actual)))
 }
 
 func (c *Compressor) ToByteArray(diff int64) []byte {
