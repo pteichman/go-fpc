@@ -38,7 +38,7 @@ func (c *Compressor) encodeAndPad(buf *bytes.Buffer, v float64) {
 	diff1d := c.pred1.Prediction() ^ dbits
 	diff2d := c.pred2.Prediction() ^ dbits
 
-	pred1better := countLeadingZeros(diff1d) >= countLeadingZeros(diff2d)
+	pred1better := countLeadingZeros(uint64(diff1d)) >= countLeadingZeros(uint64(diff2d))
 
 	c.pred1.Update(dbits)
 	c.pred2.Update(dbits)
@@ -71,7 +71,7 @@ func (c *Compressor) encode(buf *bytes.Buffer, d, e float64) {
 	diff1d := c.pred1.Prediction() ^ dbits
 	diff2d := c.pred2.Prediction() ^ dbits
 
-	pred1BetterForD := countLeadingZeros(diff1d) >= countLeadingZeros(diff2d)
+	pred1BetterForD := countLeadingZeros(uint64(diff1d)) >= countLeadingZeros(uint64(diff2d))
 
 	c.pred1.Update(dbits)
 	c.pred2.Update(dbits)
@@ -80,7 +80,7 @@ func (c *Compressor) encode(buf *bytes.Buffer, d, e float64) {
 	diff1e := c.pred1.Prediction() ^ ebits
 	diff2e := c.pred2.Prediction() ^ ebits
 
-	pred1BetterForE := countLeadingZeros(diff1e) >= countLeadingZeros(diff2e)
+	pred1BetterForE := countLeadingZeros(uint64(diff1e)) >= countLeadingZeros(uint64(diff2e))
 
 	c.pred1.Update(ebits)
 	c.pred2.Update(ebits)
@@ -97,11 +97,11 @@ func (c *Compressor) encode(buf *bytes.Buffer, d, e float64) {
 
 	if pred1BetterForE {
 		zb := encodeZeroBytes(diff1e)
-		code |= byte(zb << 4)
+		code |= byte(zb)
 	} else {
 		zb := encodeZeroBytes(diff2e)
 		code |= 0x08
-		code |= byte(zb << 4)
+		code |= byte(zb)
 	}
 
 	// FIXME: ignoring errors
@@ -210,18 +210,18 @@ func (c *Compressor) ToLong(buf []byte) int64 {
 }
 
 func encodeZeroBytes(diff1d int64) int32 {
-	lzb := int32(countLeadingZeros(diff1d) / 8)
+	lzb := int32(countLeadingZeros(uint64(diff1d)) / 8)
 	if lzb >= 4 {
 		lzb--
 	}
 	return lzb
 }
 
-func countLeadingZeros(n int64) int {
+func countLeadingZeros(n uint64) int {
 	// There are plenty of better ways to do this, but use the sign of n
 	// to check its high bit.
 	for i := 0; i < 64; i++ {
-		if n < 0 {
+		if n&0x8000000000000000 != 0 {
 			return i
 		}
 		n = n << 1

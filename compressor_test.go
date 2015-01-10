@@ -5,6 +5,24 @@ import (
 	"testing"
 )
 
+func TestCountLeadingZeros(t *testing.T) {
+	var tests = []struct {
+		N        uint64
+		Expected int
+	}{
+		{0, 64},
+		{0xFFFFFFFF, 32},
+		{0xFFFFFFFFFFFFFFFF, 0},
+	}
+
+	for _, tt := range tests {
+		v := countLeadingZeros(tt.N)
+		if v != tt.Expected {
+			t.Errorf("Leading zeros for %d == %d (expected %d)", tt.N, v, tt.Expected)
+		}
+	}
+}
+
 func TestLongToByteArray(t *testing.T) {
 	comp := NewCompressor(16)
 
